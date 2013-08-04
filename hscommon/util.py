@@ -13,9 +13,8 @@ import re
 from math import ceil
 import glob
 import shutil
-
-from . import io
-from .path import Path
+from pathlib import Path
+import logging
 
 def nonone(value, replace_value):
     ''' Returns value if value is not None. Returns replace_value otherwise.
@@ -256,14 +255,28 @@ def multi_replace(s, replace_from, replace_to=''):
 
 #--- Files related
 
+def log_io_error(func):
+    """Catches OSError, IOError and WindowsError and log them
+    """
+    def wrapper(path, *args, **kwargs):
+        try:
+            return func(path, *args, **kwargs)
+        except (IOError, OSError) as e:
+            msg = 'Error "{0}" during operation "{1}" on "{2}": "{3}"'
+            classname = e.__class__.__name__
+            funcname = func.__name__
+            logging.warn(msg.format(classname, funcname, str(path), str(e)))
+    
+    return wrapper
+
 def modified_after(first_path, second_path):
     """Returns True if first_path's mtime is higher than second_path's mtime."""
     try:
-        first_mtime = io.stat(first_path).st_mtime
+        first_mtime = os.stat(str(first_path)).st_mtime
     except EnvironmentError:
         return False
     try:
-        second_mtime = io.stat(second_path).st_mtime
+        second_mtime = os.stat(str(second_path)).st_mtime
     except EnvironmentError:
         return True
     return first_mtime > second_mtime
@@ -281,18 +294,18 @@ def find_in_path(name, paths=None):
             return op.join(path, name)
     return None
 
-@io.log_io_error
+@log_io_error
 def delete_if_empty(path, files_to_delete=[]):
     ''' Deletes the directory at 'path' if it is empty or if it only contains files_to_delete.
     '''
-    if not io.exists(path) or not io.isdir(path):
+    if not path.exists() or not path.is_dir():
         return
-    contents = io.listdir(path)
-    if any(name for name in contents if (name not in files_to_delete) or io.isdir(path + name)):
+    contents = list(path.glob('*'))
+    if any(p for p in contents if (p.name not in files_to_delete) or p.is_dir()):
         return False
-    for name in contents:
-        io.remove(path + name)
-    io.rmdir(path)
+    for p in contents:
+        p.unlink()
+    path.rmdir()
     return True
 
 def open_if_filename(infile, mode='rb'):
@@ -302,7 +315,7 @@ def open_if_filename(infile, mode='rb'):
     Returns a tuple (shouldbeclosed,infile) infile is a file object
     """
     if isinstance(infile, Path):
-        return (io.open(infile, mode), True)
+        return (infile.open(mode=mode), True)
     if isinstance(infile, str):
         return (open(infile, mode), True)
     else:

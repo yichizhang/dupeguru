@@ -7,7 +7,7 @@
 # http://www.hardcoded.net/licenses/bsd_license
 
 import re
-from . import io
+import shutil
 
 #This matches [123], but not [12] (3 digits being the minimum).
 #It also matches [1234] [12345] etc..
@@ -40,23 +40,24 @@ def _smart_move_or_copy(operation, source_path, dest_path):
     ''' Use move() or copy() to move and copy file with the conflict management, but without the
         slowness of the fs system.
     '''
-    if io.isdir(dest_path) and not io.isdir(source_path):
-        dest_path = dest_path + source_path[-1]
-    if io.exists(dest_path):
-        filename = dest_path[-1]
-        dest_dir_path = dest_path[:-1]
-        newname = get_conflicted_name(io.listdir(dest_dir_path), filename)
-        dest_path = dest_dir_path + newname
-    operation(source_path, dest_path)
-    
+    if dest_path.exists() and dest_path.is_dir() and not source_path.is_dir():
+        dest_path = dest_path[source_path.name]
+    if dest_path.exists():
+        filename = dest_path.name
+        dest_dir_path = dest_path.parent()
+        existing_names = [p.name for p in dest_dir_path.glob('*')]
+        newname = get_conflicted_name(existing_names, filename)
+        dest_path = dest_dir_path[newname]
+    operation(str(source_path), str(dest_path))
+
 def smart_move(source_path, dest_path):
-    _smart_move_or_copy(io.move, source_path, dest_path)
+    _smart_move_or_copy(shutil.move, source_path, dest_path)
 
 def smart_copy(source_path, dest_path):
     try:
-        _smart_move_or_copy(io.copy, source_path, dest_path)
+        _smart_move_or_copy(shutil.copy, source_path, dest_path)
     except IOError as e:
         if e.errno in {21, 13}: # it's a directory, code is 21 on OS X / Linux and 13 on Windows
-            _smart_move_or_copy(io.copytree, source_path, dest_path)
+            _smart_move_or_copy(shutil.copytree, source_path, dest_path)
         else:
             raise

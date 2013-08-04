@@ -11,9 +11,7 @@ import logging
 import sqlite3 as sqlite
 import threading
 from queue import Queue, Empty
-
-from . import io
-from .path import Path
+from pathlib import Path
 
 class Currency:
     all = []
@@ -310,7 +308,7 @@ class RatesDB:
             logging.warning("Corrupt currency database at {0}. Starting over.".format(repr(self.db_or_path)))
             if isinstance(self.db_or_path, (str, Path)):
                 self.con.close()
-                io.remove(Path(self.db_or_path))
+                Path(self.db_or_path).unlink()
                 self.con = sqlite.connect(str(self.db_or_path))
             else:
                 logging.warning("Can't re-use the file, using a memory table")
