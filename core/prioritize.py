@@ -79,7 +79,7 @@ class FolderCategory(ValueListCategory):
     
     def sort_key(self, dupe, crit_value):
         value = self.extract_value(dupe)
-        if value[:len(crit_value)] == crit_value:
+        if crit_value == value or crit_value in value.parents():
             return 0
         else:
             return 1

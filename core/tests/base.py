@@ -6,8 +6,9 @@
 # which should be included with this package. The terms are also available at 
 # http://www.hardcoded.net/licenses/bsd_license
 
+from pathlib import Path
+
 from hscommon.testutil import TestApp as TestAppBase, eq_, with_app
-from hscommon.path import Path
 from hscommon.util import get_file_ext, format_size
 from hscommon.gui.column import Column
 from jobprogress.job import nulljob, JobCancelled
@@ -100,11 +101,11 @@ class NamedObject:
     
     @property
     def path(self):
-        return self._folder + self.name
+        return self._folder[self.name]
     
     @property
     def folder_path(self):
-        return self.path[:-1]
+        return self.path.parent()
     
     @property
     def extension(self):

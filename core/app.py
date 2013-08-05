@@ -16,9 +16,9 @@ import shutil
 
 from send2trash import send2trash
 from jobprogress import job
+from pathlib import Path
 from hscommon.reg import RegistrableApplication
 from hscommon.notify import Broadcaster
-from hscommon.path import Path
 from hscommon.conflict import smart_move, smart_copy
 from hscommon.gui.progress_window import ProgressWindow
 from hscommon.util import (delete_if_empty, first, escape, nonone, format_time_decimal, allsame,
@@ -334,29 +334,29 @@ class DupeGuru(RegistrableApplication, Broadcaster):
     def clean_empty_dirs(self, path):
         if self.options['clean_empty_dirs']:
             while delete_if_empty(path, ['.DS_Store']):
-                path = path[:-1]
+                path = path.parent()
     
     def copy_or_move(self, dupe, copy: bool, destination: str, dest_type: DestType):
         source_path = dupe.path
         location_path = first(p for p in self.directories if dupe.path in p)
         dest_path = Path(destination)
         if dest_type in {DestType.Relative, DestType.Absolute}:
-            # no filename, no windows drive letter
-            source_base = source_path.remove_drive_letter()[:-1]
+            # no filename, no windows drive letter, no root
+            source_base = source_path.relative().parent()
             if dest_type == DestType.Relative:
-                source_base = source_base[location_path:]
-            dest_path = dest_path + source_base
+                source_base = source_base.relative_to(location_path.relative())
+            dest_path = dest_path[source_base]
         if not dest_path.exists():
-            dest_path.makedirs()
+            dest_path.mkdir(parents=True)
         # Add filename to dest_path. For file move/copy, it's not required, but for folders, yes.
-        dest_path = dest_path + source_path[-1]
+        dest_path = dest_path[source_path.name]
         logging.debug("Copy/Move operation from '%s' to '%s'", source_path, dest_path)
         # Raises an EnvironmentError if there's a problem
         if copy:
             smart_copy(source_path, dest_path)
         else:
             smart_move(source_path, dest_path)
-            self.clean_empty_dirs(source_path[:-1])
+            self.clean_empty_dirs(source_path.parent())
     
     def copy_or_move_marked(self, copy):
         def do(j):

@@ -8,9 +8,9 @@
 
 from xml.etree import ElementTree as ET
 import logging
+from pathlib import Path
 
 from jobprogress import job
-from hscommon.path import Path
 from hscommon.util import FileOrPath
 
 from . import fs
@@ -35,7 +35,7 @@ class Directories:
     
     def __contains__(self, path):
         for p in self._dirs:
-            if path in p:
+            if path == p or p in path.parents():
                 return True
         return False
     
@@ -51,7 +51,7 @@ class Directories:
     #---Private
     def _default_state_for_path(self, path):
         # Override this in subclasses to specify the state of some special folders.
-        if path[-1].startswith('.'): # hidden
+        if path.name.startswith('.'): # hidden
             return DirectoryState.Excluded
     
     def _get_files(self, from_path, j):
@@ -61,7 +61,7 @@ class Directories:
             # Recursively get files from folders with lots of subfolder is expensive. However, there
             # might be a subfolder in this path that is not excluded. What we want to do is to skim
             # through self.states and see if we must continue, or we can stop right here to save time
-            if not any(p[:len(from_path)] == from_path for p in self.states):
+            if not any(p.parts[:len(from_path.parts)] == from_path.parts for p in self.states):
                 return
         try:
             filepaths = set()
@@ -72,9 +72,8 @@ class Directories:
                     file.is_ref = state == DirectoryState.Reference
                     filepaths.add(file.path)
                     yield file
-            subpaths = [from_path + name for name in from_path.listdir()]
             # it's possible that a folder (bundle) gets into the file list. in that case, we don't want to recurse into it
-            subfolders = [p for p in subpaths if not p.islink() and p.isdir() and p not in filepaths]
+            subfolders = [p for p in from_path.glob('*') if not p.is_symlink() and p.is_dir() and p not in filepaths]
             for subfolder in subfolders:
                 for file in self._get_files(subfolder, j):
                     yield file
@@ -114,9 +113,9 @@ class Directories:
     def get_subfolders(path):
         """returns a sorted list of paths corresponding to subfolders in `path`"""
         try:
-            names = [name for name in path.listdir() if (path + name).isdir()]
+            names = [p.name for p in path.glob('*') if p.is_dir()]
             names.sort(key=lambda x:x.lower())
-            return [path + name for name in names]
+            return [path[name] for name in names]
         except EnvironmentError:
             return []
     
@@ -147,7 +146,7 @@ class Directories:
         default_state = self._default_state_for_path(path)
         if default_state is not None:
             return default_state
-        parent = path[:-1]
+        parent = path.parent()
         if parent in self:
             return self.get_state(parent)
         else:

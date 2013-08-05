@@ -117,7 +117,7 @@ class Scanner:
             return False
         if is_same_with_digit(refname, dupename):
             return True
-        return len(dupe.path) > len(ref.path)
+        return len(dupe.path.parts) > len(ref.path.parts)
     
     def get_dupe_groups(self, files, j=job.nulljob):
         j = j.start_subjob([8, 2])
@@ -140,7 +140,7 @@ class Scanner:
             toremove = set()
             last_parent_path = sortedpaths[0]
             for p in sortedpaths[1:]:
-                if p in last_parent_path:
+                if last_parent_path in p.parents():
                     toremove.add(p)
                 else:
                     last_parent_path = p
