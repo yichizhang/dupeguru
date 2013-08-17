@@ -1,0 +1,8 @@
+I tried converting usage of hscommon.path with pathlib so that I could get rid of its maintenance
+burden. In that, I was successful. This branch has all tests passing, and the app runs correctly,
+AFAICT.
+
+Unfortunately, pathlib uses too much memory. I compared memory usage for a rather big scan, and
+while hscommon.path's dupeGuru used 70mb, pathlib's used 120mb.
+
+Maybe that this situation will get better, so I'm keeping this branch around.
