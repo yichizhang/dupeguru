@@ -233,7 +233,7 @@ http://www.gnu.org/licenses/gpl-3.0.html
 {
     PrioritizeDialog *dlg = [[PrioritizeDialog alloc] initWithApp:model];
     NSInteger result = [NSApp runModalForWindow:[dlg window]];
-    if (result == NSRunStoppedResponse) {
+    if (result == NSModalResponseStop) {
         [[dlg model] performReprioritization];
     }
     [dlg release];
@@ -257,7 +257,7 @@ http://www.gnu.org/licenses/gpl-3.0.html
     [sp setCanCreateDirectories:YES];
     [sp setAllowedFileTypes:[NSArray arrayWithObject:@"dupeguru"]];
     [sp setTitle:NSLocalizedString(@"Select a file to save your results to", @"")];
-    if ([sp runModal] == NSOKButton) {
+    if ([sp runModal] == NSModalResponseOK) {
         [model saveResultsAs:[[sp URL] path]];
         [[app recentResults] addFile:[[sp URL] path]];
     }

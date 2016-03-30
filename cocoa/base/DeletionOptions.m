@@ -41,12 +41,12 @@ http://www.gnu.org/licenses/gpl-3.0.html
 
 - (void)proceed
 {
-    [NSApp stopModalWithCode:NSOKButton];
+    [NSApp stopModalWithCode:NSModalResponseOK];
 }
 
 - (void)cancel
 {
-    [NSApp stopModalWithCode:NSCancelButton];
+    [NSApp stopModalWithCode:NSModalResponseCancel];
 }
 
 /* model --> view */
@@ -62,7 +62,7 @@ http://www.gnu.org/licenses/gpl-3.0.html
     [linkTypeRadio selectCellAtRow:0 column:0];
     NSInteger r = [NSApp runModalForWindow:[self window]];
     [[self window] close];
-    return r == NSOKButton;
+    return r == NSModalResponseOK;
 }
 
 - (void)setHardlinkOptionEnabled:(BOOL)enabled
